@@ -32,6 +32,7 @@ ExecStart=/home/htk/Assignment4/env/bin/gunicorn --workers 3 --bind 0.0.0.0:8080
 WantedBy=multi-user.target" > Assignment4.service
 sudo chown root:root Assignment4.service
 sudo cp Assignment4.service /etc/systemd/system/Assignment4.service
+sudo chown htk:htk /home/htk/Assignment4
 sudo systemctl stop Assignment4
 sudo systemctl daemon-reload
 sudo systemctl start Assignment4
