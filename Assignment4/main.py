@@ -6,7 +6,7 @@ import google.cloud.logging
 import os
 from flask import Flask, request
 import json
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./googleCredentials.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./googleCredentials.json"
 import logging
 import sqlalchemy
 import ssl
