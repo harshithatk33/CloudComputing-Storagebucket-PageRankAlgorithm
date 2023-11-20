@@ -1,0 +1,7 @@
+__pycache__
+env/
+.DS_Store
+googleCredentials.json
+server-ca.pem
+client-cert.pem
+client-key.pem
