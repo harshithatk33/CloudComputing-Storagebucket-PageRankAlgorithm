@@ -26,7 +26,7 @@ User=htk
 Group=www-data
 WorkingDirectory=/home/htk/Assignment8
 Environment="PATH=/home/htk/Assignment8/env/bin"
-ExecStart=/home/htk/Assignment8/env/bin/gunicorn --workers 3 --bind 0.0.0.0:8080 wsgi:app
+ExecStart=/home/htk/Assignment8/env/bin/gunicorn --workers 3 --bind 0.0.0.0:8081 wsgi:app
 
 [Install]
 WantedBy=multi-user.target" > Assignment8.service
@@ -36,6 +36,6 @@ sudo chown htk:htk /home/htk/Assignment8
 sudo systemctl stop Assignment8
 sudo systemctl daemon-reload
 sudo systemctl start Assignment8
-systemctl daemon-reload
+sudo systemctl daemon-reload
 sudo systemctl restart Assignment8
 sudo systemctl enable Assignment8

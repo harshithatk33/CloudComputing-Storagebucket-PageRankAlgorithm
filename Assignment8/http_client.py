@@ -59,6 +59,9 @@ list_of_incomes = ['0-10k', '10k-20k', '20k-40k', '40k-60k', '60k-100k', '100k-1
 cidr_dict = {}
 used_cidrs = []
 
+a_zone = 0
+b_zone = 0
+
 def fix_certs():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -146,6 +149,10 @@ def make_request(domain, port, country, ip, filename, use_ssl, ssl_context, foll
         print(res.status, res.reason)
         print(res.msg)
         print(data)
+        if(res.getheader('X-zone') == 'us-central1-a'):
+            a_zone += 1
+        else:
+            b_zone += 1
     if follow:
         location_header = res.getheader('location')
         if location_header is not None:
@@ -179,14 +186,19 @@ def main():
         args.webdir = ''
     # Make the requests
     for i in range(0,args.num_requests):
-        country = select_country()
-        cidr = select_cidr(country)
-        ip = make_ip(cidr)
-        filename = make_filename(args.bucket, args.webdir, args.index)
-        # If using the default port but have enabled ssl change the default port to be that of SSL
-        if args.ssl and args.port==80:
-            args.port=443
-        make_request(args.domain, args.port, country, ip, filename, args.ssl, ssl_context, args.follow, args.verbose)
+        try: 
+            country = select_country()
+            cidr = select_cidr(country)
+            ip = make_ip(cidr)
+            filename = make_filename(args.bucket, args.webdir, args.index)
+            # If using the default port but have enabled ssl change the default port to be that of SSL
+            if args.ssl and args.port==80:
+                args.port=443
+            make_request(args.domain, args.port, country, ip, filename, args.ssl, ssl_context, args.follow, args.verbose)
+        except Exception as error:
+            print(error)
+    
+    print("\n\n Request Statistics : \n us-central1-a: " + str(a_zone) + "\n us-central-b: " + str(b_zone))
 
 if __name__ == "__main__":
     main()
