@@ -79,7 +79,7 @@ def build_country_cidrs():
     for country in list_of_countries:
         # Select a number of CIDRs to associate with that country
         num_cidrs = random.randrange(1, 10)
-        cnt = 0;
+        cnt = 0
         country_cidrs = []
         while cnt < num_cidrs:
             next_cidr = random.randrange(1, 16000000)
@@ -133,6 +133,7 @@ def build_headers(country, ip):
     return headers
 
 def make_request(domain, port, country, ip, filename, use_ssl, ssl_context, follow, verbose):
+    global a_zone, b_zone
     if verbose:
         print("Requesting ", filename, " from ", domain, port)
     conn = None
@@ -148,7 +149,7 @@ def make_request(domain, port, country, ip, filename, use_ssl, ssl_context, foll
     if verbose:
         print(res.status, res.reason)
         print(res.msg)
-        print(data)
+        # print(data)
         if(res.getheader('X-zone') == 'us-central1-a'):
             a_zone += 1
         else:
