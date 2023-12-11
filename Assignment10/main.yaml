@@ -1,0 +1,216 @@
+resources:
+    - name: cds561-sb-assgn10-harshutk
+      type: storage.v1.bucket
+      properties:
+          location: us-central1
+
+    - name: sa-account
+      type: iam.v1.serviceAccount
+      properties:
+          accountId: sa-cds561-assgn10
+          displayName: sa-cds561-assgn10
+
+    - name: sa-account-policy
+      type: gcp-types/cloudresourcemanager-v1:virtual.projects.iamMemberBinding
+      properties:
+          accountId: sa-cds561-assgn10
+      accessControl:
+          gcpIamPolicy:
+              bindings:
+                  - role: roles/cloudsql.admin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/cloudsql.client
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/compute.instanceAdmin.v1
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/compute.networkAdmin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/compute.securityAdmin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/dataflow.admin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/dataflow.worker
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/logging.admin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/pubsub.publisher
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/pubsub.subscriber
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/pubsub.viewer
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/secretmanager.admin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/iam.serviceAccountUser
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/storage.admin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/storage.objectAdmin
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+                  - role: roles/storage.objectViewer
+                    members:
+                        - serviceAccount:$(ref.sa-account.email)
+      metadata:
+          dependsOn:
+              - sa-account
+
+    # Static IP address
+    - name: assgn10-ipaddress-policy
+      type: compute.v1.address
+      properties:
+          name: assgn10-ipaddress-policy
+          region: us-central1
+
+    - name: assgn10-virtual-machine
+      type: compute.v1.instance
+      properties:
+          zone: us-central1-f
+          machineType: https://www.googleapis.com/compute/v1/projects/quiet-sanctuary-399018/zones/us-central1-f/machineTypes/n1-standard-1
+          disks:
+              - deviceName: boot
+                type: PERSISTENT
+                boot: true
+                autoDelete: true
+                initializeParams:
+                    sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-10-buster-v20231115
+          networkInterfaces:
+              - network: https://www.googleapis.com/compute/v1/projects/quiet-sanctuary-399018/global/networks/default
+                accessConfigs:
+                    - name: External NAT
+                      type: ONE_TO_ONE_NAT
+                      # natIP: $(ref.assgn10-ipaddress-policy.selfLink)
+          serviceAccounts:
+              - email: sa-cds561-assgn10@quiet-sanctuary-399018.iam.gserviceaccount.com
+          tags:
+              items:
+                  - http-server
+                  - https-server
+          metadata:
+              items:
+                  - key: google-logging-enabled
+                    value: "true"
+                  - key: files-bucket
+                    value: $(ref.cds561-sb-assgn10-harshutk.name)
+                  - key: startup-script
+                    value: |
+                        #! /bin/bash
+                        sudo apt update
+                        sudo apt -y upgrade
+                        sudo apt-get install python3-pip -y
+                        sudo apt-get install git -y
+                        sudo apt-get install python3-venv -y
+                        cd /home/htk
+                        rm -r CloudComputing-Storagebucket-PageRankAlgorithm
+                        rm -r Assignment4
+                        git clone https://github.com/harshithatk33/CloudComputing-Storagebucket-PageRankAlgorithm.git
+                        cd CloudComputing-Storagebucket-PageRankAlgorithm
+                        pwd
+                        cp -r /home/htk/CloudComputing-Storagebucket-PageRankAlgorithm/Assignment4 /home/htk
+                        cd /home/htk/Assignment4
+                        python3 -m venv env
+                        source /home/htk/Assignment4/env/bin/activate
+                        pip3 install -r requirements.txt
+                        deactivate
+                        touch Assignment4.service
+                        echo "[Unit]
+                        Description=Gunicorn instance to serve Assignment 4 app
+                        After=network.target
+
+                        [Service]
+                        User=htk
+                        Group=www-data
+                        WorkingDirectory=/home/htk/Assignment4
+                        Environment="PATH=/home/htk/Assignment4/env/bin"
+                        ExecStart=/home/htk/Assignment4/env/bin/gunicorn --workers 3 --bind 0.0.0.0:8080 wsgi:app
+
+                        [Install]
+                        WantedBy=multi-user.target" > Assignment4.service
+                        sudo chown root:root Assignment4.service
+                        sudo cp Assignment4.service /etc/systemd/system/Assignment4.service
+                        sudo chown htk:htk /home/htk/Assignment4
+                        sudo systemctl stop Assignment4
+                        sudo systemctl daemon-reload
+                        sudo systemctl start Assignment4
+                        systemctl daemon-reload
+                        sudo systemctl restart Assignment4
+                        sudo systemctl enable Assignment4
+          dependsOn:
+              - sa-account
+              - assgn10-ipaddress-policy
+              - cds561-sb-assgn10-harshutk
+
+    - name: allow-http
+      type: compute.v1.firewall
+      properties:
+          network: global/networks/default
+          sourceRanges: ["0.0.0.0/0"]
+          allowed:
+              - IPProtocol: TCP
+                ports: ["80"]
+
+    - name: allow-https
+      type: compute.v1.firewall
+      properties:
+          network: global/networks/default
+          sourceRanges: ["0.0.0.0/0"]
+          allowed:
+              - IPProtocol: TCP
+                ports: ["443"]
+
+    # Pub/Sub resources
+    - name: cds561-htk-topic
+      type: pubsub.v1.topic
+      properties:
+          name: cds561-htk-topic
+          topic: cds561-htk-topic
+          project: quiet-sanctuary-399018
+
+    - name: cds561-htk-sub
+      type: pubsub.v1.subscription
+      properties:
+          name: cds561-htk-sub
+          topic: $(ref.cds561-htk-topic.name)
+          subscription: cds561-htk-sub
+          ackDeadlineSeconds: 60
+          project: quiet-sanctuary-399018
+
+    # Cloud SQL resources
+    - name: cloud-sql-server
+      type: sqladmin.v1beta4.instance
+      properties:
+          region: us-central1
+          backendType: SECOND_GEN
+          databaseVersion: POSTGRES_13
+          instanceType: CLOUD_SQL_INSTANCE
+          settings:
+              tier: db-f1-micro
+              activationPolicy: ALWAYS
+              dataDiskSizeGb: 10
+              storageAutoResize: true
+              ipConfiguration:
+                  ipv4Enabled: true
+
+    - name: my-database-user
+      type: sqladmin.v1beta4.user
+      properties:
+          name: harshutk
+          instance: $(ref.cloud-sql-server.name)
+          host: "%"
+          password: htk-pwd
+          dependsOn:
+              - cloud-sql-server
